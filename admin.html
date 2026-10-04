@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin • Rocket Roulette</title>
+<style>
+  :root{
+    --bg:#0d1017;--card:#151923;--text:#e6e8ee;--muted:#9aa3b2;
+    --border:#262b38;--accent:#5b8cff;--gold:#ffd166;--red:#e0344a;--green:#16a34a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh}
+
+  .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .login-card{background:var(--card);border:1px solid var(--border);border-radius:18px;
+    padding:36px;width:100%;max-width:400px;text-align:center}
+  .login-card h1{font-size:1.6rem;margin-bottom:8px;
+    background:linear-gradient(90deg,#5b8cff,#7c5cff);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .login-card p{color:var(--muted);font-size:.9rem;margin-bottom:22px}
+  .login-card input{width:100%;padding:12px 14px;border-radius:10px;
+    border:1px solid var(--border);background:var(--bg);color:var(--text);
+    font-size:1rem;outline:none;margin-bottom:12px;text-align:center;letter-spacing:2px}
+  .login-card input:focus{border-color:var(--accent)}
+  .login-card button{width:100%;padding:12px;border-radius:10px;border:none;
+    background:linear-gradient(90deg,#5b8cff,#7c5cff);color:#fff;
+    font-size:1rem;font-weight:700;cursor:pointer}
+  .login-card .err{color:#ff6b6b;font-size:.88rem;min-height:20px;margin-top:8px}
+
+  #panel{display:none}
+  #panel.active{display:block}
+
+  header{position:sticky;top:0;z-index:100;background:rgba(13,16,23,.92);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .header-inner{max-width:1400px;margin:0 auto;padding:14px 22px;
+    display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+  .logo{font-weight:700;font-size:1.15rem;color:var(--gold)}
+
+  .btn{padding:8px 16px;border-radius:10px;border:1px solid var(--border);
+    background:var(--card);color:var(--text);font-size:.9rem;font-weight:600;cursor:pointer;
+    transition:transform .15s,border-color .2s}
+  .btn:hover{transform:translateY(-1px);border-color:var(--accent)}
+  .btn-primary{background:linear-gradient(90deg,#5b8cff,#7c5cff);border:none;color:#fff}
+  .btn-green{background:#16a34a;border-color:#16a34a;color:#fff}
+  .btn-red{background:#b91c1c;border-color:#b91c1c;color:#fff}
+  .btn-sm{padding:5px 10px;font-size:.8rem}
+
+  main{max-width:1400px;margin:0 auto;padding:22px}
+
+  .tabs{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap}
+  .tab{padding:10px 18px;border-radius:10px;border:1px solid var(--border);
+    background:var(--card);color:var(--text);cursor:pointer;font-weight:600;font-size:.92rem}
+  .tab.active{background:linear-gradient(90deg,#5b8cff,#7c5cff);border-color:transparent;color:#fff}
+
+  .tab-content{display:none}
+  .tab-content.active{display:block}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:16px;margin-bottom:22px}
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px}
+  .stat-card .lbl{color:var(--muted);font-size:.8rem;text-transform:uppercase;
+    letter-spacing:1px;margin-bottom:6px}
+  .stat-card .val{font-size:1.6rem;font-weight:800;color:var(--gold)}
+
+  .section{background:var(--card);border:1px solid var(--border);
+    border-radius:16px;padding:22px;margin-bottom:20px}
+  .section h2{font-size:1.05rem;text-transform:uppercase;letter-spacing:1.2px;
+    color:var(--muted);margin-bottom:16px}
+
+  table{width:100%;border-collapse:collapse;font-size:.9rem}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);
+    vertical-align:top}
+  th{color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:1px;font-weight:600}
+  tr:hover td{background:rgba(91,140,255,.05)}
+  .empty-row td{text-align:center;color:var(--muted);padding:20px}
+
+  .status{padding:3px 10px;border-radius:6px;font-size:.75rem;font-weight:700;text-transform:uppercase}
+  .status.pending{background:#f59e0b;color:#000}
+  .status.approved{background:#4ade80;color:#000}
+  .status.rejected{background:#ef4444;color:#fff}
+  .status.completed{background:#5b8cff;color:#fff}
+  .status.wager{background:#a855f7;color:#fff}
+  .status.failed{background:#ef4444;color:#fff}
+
+  .type-dep{color:#4ade80;font-weight:700}
+  .type-wd{color:#f59e0b;font-weight:700}
+
+  .actions{display:flex;gap:6px;flex-wrap:wrap}
+  .balance-edit{display:flex;gap:6px;align-items:center}
+  .balance-edit input{width:90px;padding:5px 8px;border-radius:6px;
+    border:1px solid var(--border);background:var(--bg);color:var(--text);
+    font-size:.85rem;outline:none}
+  .balance-edit input:focus{border-color:var(--accent)}
+
+  .toast{position:fixed;top:80px;right:20px;background:var(--card);
+    border:1px solid var(--border);padding:14px 20px;border-radius:12px;
+    z-index:1000;transform:translateX(400px);transition:transform .3s;
+    max-width:340px;font-size:.95rem}
+  .toast.show{transform:translateX(0)}
+  .toast.win{border-color:#4ade80}
+  .toast.lose{border-color:#ff6b6b}
+
+  .pw-change{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .pw-change input{padding:8px 12px;border-radius:8px;border:1px solid var(--border);
+    background:var(--bg);color:var(--text);font-size:.9rem;outline:none}
+  .pw-change input:focus{border-color:var(--accent)}
+
+  .promo-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+    gap:12px;margin-bottom:20px;align-items:end}
+  .promo-form .field{display:flex;flex-direction:column;gap:6px}
+  .promo-form label{font-size:.78rem;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+  .promo-form input,.promo-form select{padding:10px 12px;border-radius:10px;
+    border:1px solid var(--border);background:var(--bg);color:var(--text);
+    font-size:.92rem;outline:none;font-family:inherit}
+  .promo-form input:focus,.promo-form select:focus{border-color:var(--accent)}
+  .promo-form button{padding:10px 20px;border-radius:10px;border:none;
+    background:linear-gradient(90deg,#5b8cff,#7c5cff);color:#fff;
+    font-weight:700;cursor:pointer;font-size:.92rem;height:42px}
+
+  .promo-code{font-family:monospace;font-weight:800;letter-spacing:2px;color:var(--gold)}
+  .wager-tag{display:inline-block;padding:2px 8px;border-radius:6px;
+    background:#a855f7;color:#fff;font-size:.72rem;font-weight:700;margin-left:6px}
+
+  .crypto-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+  .crypto-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px}
+  .crypto-card .top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .crypto-card .icon{width:44px;height:44px;border-radius:50%;display:flex;
+    align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff}
+  .crypto-card .title{font-weight:800;font-size:1.05rem}
+  .crypto-card .subtitle{color:var(--muted);font-size:.8rem}
+  .crypto-card .row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+  .crypto-card label{font-size:.75rem;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.6px;font-weight:600}
+  .crypto-card input{width:100%;padding:10px 12px;border-radius:10px;
+    border:1px solid var(--border);background:var(--bg);color:var(--text);
+    font-size:.9rem;outline:none;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .crypto-card input:focus{border-color:var(--accent)}
+  .crypto-card .two-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .crypto-card .actions{display:flex;gap:8px;margin-top:6px}
+
+  .wallet-cell{font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:.78rem;max-width:220px;word-break:break-all;color:var(--gold)}
+
+  /* ============ ДАННЫЕ ОБ УСТРОЙСТВЕ, IP, РЕГИОНЕ ============ */
+  .device-info{font-size:.78rem;color:var(--muted);line-height:1.5;max-width:230px}
+  .device-info b{color:var(--text);font-weight:600}
+  .device-info .tag{display:inline-block;padding:1px 6px;border-radius:4px;
+    background:#1e293b;color:#94a3b8;font-size:.7rem;margin-right:4px;margin-bottom:2px}
+  .ip-cell{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;color:var(--gold)}
+  .region-cell{font-size:.82rem;line-height:1.5}
+  .region-cell .country{font-weight:700;color:var(--text)}
+  .region-cell .sub{font-size:.72rem;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="login-wrap" id="loginScreen">
+  <div class="login-card">
+    <h1>🛡️ Admin Panel</h1>
+    <p>Введите пароль администратора</p>
+    <form onsubmit="adminLogin(event)">
+      <input type="password" id="adminPw" placeholder="Пароль" required autofocus>
+      <button type="submit">Войти</button>
+    </form>
+    <div class="err" id="loginErr"></div>
+  </div>
+</div>
+
+<div id="panel">
+  <header>
+    <div class="header-inner">
+      <div class="logo">🛡️ Rocket Admin</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a class="btn" href="index.html" target="_blank">Открыть сайт</a>
+        <button class="btn btn-red" onclick="adminLogout()">Выйти</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="tabs">
+      <div class="tab active" data-tab="dash">📊 Обзор</div>
+      <div class="tab" data-tab="users">👥 Игроки</div>
+      <div class="tab" data-tab="deposits">💰 Депозиты</div>
+      <div class="tab" data-tab="withdraws">📤 Выводы</div>
+      <div class="tab" data-tab="crypto">🪙 Крипто</div>
+      <div class="tab" data-tab="promos">🎁 Промокоды</div>
+      <div class="tab" data-tab="history">📜 История</div>
+      <div class="tab" data-tab="settings">⚙️ Настройки</div>
+    </div>
+
+    <div class="tab-content active" id="tab-dash">
+      <div class="cards">
+        <div class="stat-card"><div class="lbl">Игроков</div><div class="val" id="statUsers">0</div></div>
+        <div class="stat-card"><div class="lbl">Общий баланс</div><div class="val" id="statBalance">0 ₽</div></div>
+        <div class="stat-card"><div class="lbl">Депозитов в ожидании</div><div class="val" id="statDep">0</div></div>
+        <div class="stat-card"><div class="lbl">Выводов в ожидании</div><div class="val" id="statWd">0</div></div>
+        <div class="stat-card"><div class="lbl">Промокодов</div><div class="val" id="statPromos">0</div></div>
+        <div class="stat-card"><div class="lbl">Активаций</div><div class="val" id="statActs">0</div></div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-users">
+      <div class="section">
+        <h2>Все игроки</h2>
+        <table id="usersTable">
+          <thead>
+            <tr>
+              <th>Логин</th>
+              <th>Основной</th>
+              <th>Бонусный</th>
+              <th>Регион</th>
+              <th>IP</th>
+              <th>Устройство</th>
+              <th>Действия</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-deposits">
+      <div class="section">
+        <h2>Заявки на пополнение</h2>
+        <table id="depTable">
+          <thead>
+            <tr><th>Логин</th><th>Метод</th><th>Валюта</th><th>Сеть</th>
+                <th>Сумма ₽</th><th>Крипта</th><th>Дата</th><th>Статус</th><th>Действия</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-withdraws">
+      <div class="section">
+        <h2>Заявки на вывод</h2>
+        <table id="wdTable">
+          <thead>
+            <tr><th>Логин</th><th>Валюта</th><th>Сеть</th><th>Адрес кошелька</th>
+                <th>Сумма ₽</th><th>Дата</th><th>Статус</th><th>Действия</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-crypto">
+      <div class="section">
+        <h2>Настройки криптовалют</h2>
+        <p style="color:var(--muted);font-size:.9rem;margin-bottom:16px;">
+          Укажи адрес кошелька, сеть и минимальный депозит для каждой валюты отдельно.
+        </p>
+        <div class="crypto-cards" id="cryptoCards"></div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-promos">
+      <div class="section">
+        <h2>Создать промокод</h2>
+        <div class="promo-form">
+          <div class="field">
+            <label>Код</label>
+            <input type="text" id="pCode" placeholder="WELCOME100" maxlength="32">
+          </div>
+          <div class="field">
+            <label>Бонус (₽)</label>
+            <input type="number" id="pBonus" placeholder="100" min="1" step="1">
+          </div>
+          <div class="field">
+            <label>Мин. пополнение (₽)</label>
+            <input type="number" id="pMinDep" placeholder="0" min="0" step="1" value="0">
+          </div>
+          <div class="field">
+            <label>Период депозита</label>
+            <select id="pPeriod">
+              <option value="all">За всё время</option>
+              <option value="day">За сегодня (24 ч)</option>
+              <option value="week">За неделю</option>
+              <option value="month">За месяц</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Вейджер (x)</label>
+            <input type="number" id="pWager" placeholder="0" min="0" max="100" step="1" value="0">
+          </div>
+          <div class="field">
+            <label>Лимит активаций</label>
+            <input type="number" id="pMax" placeholder="100" min="1" max="1000" step="1" value="100">
+          </div>
+          <button onclick="createPromo()">Создать</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Активные промокоды</h2>
+        <table id="promosTable">
+          <thead>
+            <tr><th>Код</th><th>Бонус</th><th>Условие</th><th>Период</th>
+                <th>Вейджер</th><th>Исп.</th><th>Лимит</th><th>Действия</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2>Все активации</h2>
+        <table id="actsTable">
+          <thead>
+            <tr><th>Игрок</th><th>Код</th><th>Дата</th><th>Статус</th>
+                <th>Отыгрыш</th><th>Обработана</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-history">
+      <div class="section">
+        <h2>История всех заявок</h2>
+        <table id="histTable">
+          <thead>
+            <tr><th>Логин</th><th>Тип</th><th>Сумма</th><th>Создана</th><th>Обработана</th><th>Статус</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-settings">
+      <div class="section">
+        <h2>Смена пароля администратора</h2>
+        <div class="pw-change">
+          <input type="password" id="oldPw" placeholder="Текущий пароль">
+          <input type="password" id="newPw" placeholder="Новый пароль">
+          <button class="btn btn-primary" onclick="changeAdminPw()">Изменить</button>
+        </div>
+      </div>
+      <div class="section">
+        <h2>Опасная зона</h2>
+        <p style="color:var(--muted);font-size:.9rem;margin-bottom:12px">
+          Полностью сбросить все данные.
+        </p>
+        <button class="btn btn-red" onclick="resetAll()">Сбросить всё</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_USERS = 'roulette_users_v1';
+const STORAGE_SESSION = 'roulette_session_v1';
+const STORAGE_HISTORY = 'roulette_history_v1';
+const STORAGE_REQUESTS = 'roulette_requests_v1';
+const STORAGE_PROMOS = 'roulette_promos_v1';
+const STORAGE_ACTIVATIONS = 'roulette_activations_v1';
+const STORAGE_CRYPTO = 'roulette_crypto_v1';
+const STORAGE_ADMIN_PW = 'roulette_admin_pw';
+const STORAGE_ADMIN_SESSION = 'roulette_admin_session';
+const DEFAULT_PW = 'admin123';
+
+const DEFAULT_CRYPTO = {
+  USDT: { name:'USDT', network:'TRC20', address:'ВСТАВЬ_СЮДА_АДРЕС_USDT_TRC20',
+          minCrypto:'10 USDT', minRub:200, icon:'₮', color:'#26a17b', coingeckoId:'tether' },
+  BTC:  { name:'BTC',  network:'Bitcoin', address:'ВСТАВЬ_СЮДА_АДРЕС_BTC',
+          minCrypto:'0.0002 BTC', minRub:200, icon:'₿', color:'#f7931a', coingeckoId:'bitcoin' },
+  ETC:  { name:'ETC',  network:'Ethereum Classic', address:'ВСТАВЬ_СЮДА_АДРЕС_ETC',
+          minCrypto:'0.5 ETC', minRub:200, icon:'Ξ', color:'#328332', coingeckoId:'ethereum-classic' },
+  LTC:  { name:'LTC',  network:'Litecoin', address:'ВСТАВЬ_СЮДА_АДРЕС_LTC',
+          minCrypto:'0.05 LTC', minRub:200, icon:'Ł', color:'#a5a8a9', coingeckoId:'litecoin' },
+  TRON: { name:'TRON', network:'TRC20', address:'ВСТАВЬ_СЮДА_АДРЕС_TRON',
+          minCrypto:'10 TRX', minRub:200, icon:'◈', color:'#eb0029', coingeckoId:'tron' },
+  TON:  { name:'TON (Notcoin)', network:'TON', address:'ВСТАВЬ_СЮДА_АДРЕС_TON',
+          minCrypto:'1 TON', minRub:200, icon:'💎', color:'#0098ea', coingeckoId:'the-open-network' }
+};
+
+function load(k, def){ try{ const r=localStorage.getItem(k); return r?JSON.parse(r):def; }catch(e){ return def; } }
+function save(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+
+function getCryptoConfig(){
+  const stored = load(STORAGE_CRYPTO, null);
+  if(!stored) return JSON.parse(JSON.stringify(DEFAULT_CRYPTO));
+  const merged = {};
+  Object.keys(DEFAULT_CRYPTO).forEach(function(key){
+    merged[key] = Object.assign({}, DEFAULT_CRYPTO[key], stored[key] || {});
+  });
+  return merged;
+}
+function saveCryptoConfig(cfg){ save(STORAGE_CRYPTO, cfg); }
+
+function getAdminPw(){
+  const stored = localStorage.getItem(STORAGE_ADMIN_PW);
+  if(!stored){ localStorage.setItem(STORAGE_ADMIN_PW, DEFAULT_PW); return DEFAULT_PW; }
+  return stored;
+}
+
+let toastTimeout;
+function showToast(text, type){
+  const t=document.getElementById('toast');
+  t.textContent=text; t.className='toast show '+(type||'');
+  clearTimeout(toastTimeout);
+  toastTimeout=setTimeout(function(){ t.classList.remove('show'); },3500);
+}
+
+/* ============ ВХОД ============ */
+function adminLogin(e){
+  e.preventDefault();
+  const pw = document.getElementById('adminPw').value;
+  const err = document.getElementById('loginErr');
+  if(pw === getAdminPw()){
+    sessionStorage.setItem(STORAGE_ADMIN_SESSION, '1');
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('panel').classList.add('active');
+    document.getElementById('adminPw').value = '';
+    err.textContent = '';
+    renderAll();
+    showToast('Добро пожаловать','win');
+  } else {
+    err.textContent = 'Неверный пароль';
+  }
+}
+function adminLogout(){
+  sessionStorage.removeItem(STORAGE_ADMIN_SESSION);
+  document.getElementById('panel').classList.remove('active');
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('adminPw').value = '';
+}
+(function initSession(){
+  if(sessionStorage.getItem(STORAGE_ADMIN_SESSION) === '1'){
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('panel').classList.add('active');
+  }
+})();
+
+document.querySelectorAll('.tab').forEach(function(tab){
+  tab.addEventListener('click', function(){
+    document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(c){ c.classList.remove('active'); });
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+function periodRu(p){ return {day:'сегодня', week:'неделя', month:'месяц', all:'всё время'}[p]||'—'; }
+function getPeriodStart(period){
+  const now = Date.now(), DAY = 24*60*60*1000;
+  switch(period){
+    case 'day':    return now - DAY;
+    case 'week':   return now - DAY*7;
+    case 'month':  return now - DAY*30;
+    default:       return 0;
+  }
+}
+function getDepositsSum(login, period){
+  const requests = load(STORAGE_REQUESTS, []);
+  const start = getPeriodStart(period);
+  return requests
+    .filter(function(r){
+      return r.login===login && r.type==='deposit' && r.status==='approved' &&
+             r.processedAt && r.processedAt >= start;
+    })
+    .reduce(function(s, r){ return s + (r.amountRub || r.amount || 0); }, 0);
+}
+
+/* ============ КРИПТО-НАСТРОЙКИ ============ */
+function renderCryptoSettings(){
+  const cfg = getCryptoConfig();
+  const box = document.getElementById('cryptoCards');
+  box.innerHTML = Object.keys(cfg).map(function(key){
+    const c = cfg[key];
+    return '<div class="crypto-card">'+
+      '<div class="top">'+
+        '<div class="icon" style="background:'+c.color+'">'+c.icon+'</div>'+
+        '<div>'+
+          '<div class="title">'+c.name+'</div>'+
+          '<div class="subtitle">'+key+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="row">'+
+        '<label>Адрес кошелька (для приёма)</label>'+
+        '<input type="text" id="addr-'+key+'" value="'+escapeAttr(c.address)+'">'+
+      '</div>'+
+      '<div class="row">'+
+        '<label>Сеть</label>'+
+        '<input type="text" id="net-'+key+'" value="'+escapeAttr(c.network)+'">'+
+      '</div>'+
+      '<div class="two-cols">'+
+        '<div class="row">'+
+          '<label>Мин. в ₽</label>'+
+          '<input type="number" id="minrub-'+key+'" value="'+c.minRub+'" min="1" step="1">'+
+        '</div>'+
+        '<div class="row">'+
+          '<label>Мин. в крипте</label>'+
+          '<input type="text" id="minc-'+key+'" value="'+escapeAttr(c.minCrypto)+'">'+
+        '</div>'+
+      '</div>'+
+      '<div class="actions">'+
+        '<button class="btn btn-sm btn-green" onclick="saveCrypto(\''+key+'\')">Сохранить</button>'+
+        '<button class="btn btn-sm" onclick="resetCrypto(\''+key+'\')">Сбросить</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+function escapeAttr(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+    .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function saveCrypto(key){
+  const cfg = getCryptoConfig();
+  if(!cfg[key]) return;
+  const addr = document.getElementById('addr-'+key).value.trim();
+  const net = document.getElementById('net-'+key).value.trim();
+  const minRub = parseInt(document.getElementById('minrub-'+key).value, 10);
+  const minCrypto = document.getElementById('minc-'+key).value.trim();
+  if(!addr){ showToast('Введите адрес','lose'); return; }
+  if(!net){ showToast('Введите сеть','lose'); return; }
+  if(!minRub || minRub < 1){ showToast('Мин. в ₽ должен быть больше 0','lose'); return; }
+  if(!minCrypto){ showToast('Введите мин. в крипте','lose'); return; }
+  cfg[key].address = addr;
+  cfg[key].network = net;
+  cfg[key].minRub = minRub;
+  cfg[key].minCrypto = minCrypto;
+  saveCryptoConfig(cfg);
+  showToast(key+': настройки сохранены','win');
+}
+function resetCrypto(key){
+  if(!confirm('Сбросить '+key+'?')) return;
+  const cfg = getCryptoConfig();
+  cfg[key] = JSON.parse(JSON.stringify(DEFAULT_CRYPTO[key]));
+  saveCryptoConfig(cfg);
+  showToast(key+': сброшено','win');
+  renderCryptoSettings();
+}
+
+/* ============ ПРОМОКОДЫ ============ */
+function createPromo(){
+  const code = (document.getElementById('pCode').value || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+  const bonus = parseInt(document.getElementById('pBonus').value, 10);
+  const minDep = parseInt(document.getElementById('pMinDep').value, 10) || 0;
+  const period = document.getElementById('pPeriod').value;
+  const wager = parseInt(document.getElementById('pWager').value, 10);
+  const max = parseInt(document.getElementById('pMax').value, 10);
+
+  if(code.length < 3){ showToast('Код минимум 3 символа','lose'); return; }
+  if(!bonus || bonus <= 0){ showToast('Укажите сумму бонуса','lose'); return; }
+  if(minDep < 0){ showToast('Мин. пополнение отрицательное','lose'); return; }
+  if(isNaN(wager) || wager < 0 || wager > 100){ showToast('Вейджер: 0-100','lose'); return; }
+  if(!max || max < 1 || max > 1000){ showToast('Лимит: 1-1000','lose'); return; }
+
+  const promos = load(STORAGE_PROMOS, {});
+  if(promos[code]){ showToast('Такой промокод уже есть','lose'); return; }
+
+  promos[code] = {
+    code: code, bonusAmount: bonus, minDeposit: minDep, period: period,
+    wager: wager, maxUses: max, active: true, createdAt: Date.now()
+  };
+  save(STORAGE_PROMOS, promos);
+
+  document.getElementById('pCode').value = '';
+  document.getElementById('pBonus').value = '';
+  document.getElementById('pMinDep').value = 0;
+  document.getElementById('pWager').value = 0;
+  document.getElementById('pMax').value = 100;
+
+  renderAll();
+  showToast('Промокод '+code+' создан'+(wager>0?' (x'+wager+')':''),'win');
+}
+function togglePromo(code){
+  const promos = load(STORAGE_PROMOS, {});
+  if(!promos[code]) return;
+  promos[code].active = !promos[code].active;
+  save(STORAGE_PROMOS, promos);
+  renderAll();
+  showToast('Промокод '+(promos[code].active?'включён':'отключён'),'win');
+}
+function deletePromo(code){
+  if(!confirm('Удалить промокод '+code+'?')) return;
+  const promos = load(STORAGE_PROMOS, {});
+  delete promos[code];
+  save(STORAGE_PROMOS, promos);
+  let acts = load(STORAGE_ACTIVATIONS, []);
+  acts = acts.filter(function(a){ return a.code !== code; });
+  save(STORAGE_ACTIVATIONS, acts);
+  renderAll();
+  showToast('Промокод удалён','win');
+}
+function deleteActivation(id){
+  if(!confirm('Удалить активацию?')) return;
+  let acts = load(STORAGE_ACTIVATIONS, []);
+  acts = acts.filter(function(a){ return a.id !== id; });
+  save(STORAGE_ACTIVATIONS, acts);
+  renderAll();
+  showToast('Активация удалена','win');
+}
+
+/* ============ РЕНДЕР ============ */
+function renderAll(){
+  renderStats();
+  renderUsers();
+  renderDeposits();
+  renderWithdraws();
+  renderCryptoSettings();
+  renderPromos();
+  renderActivations();
+  renderHistoryTable();
+}
+
+function renderStats(){
+  const users = load(STORAGE_USERS, {});
+  const requests = load(STORAGE_REQUESTS, []);
+  const promos = load(STORAGE_PROMOS, {});
+  const acts = load(STORAGE_ACTIVATIONS, []);
+  const totalBalance = Object.values(users).reduce(function(s,u){
+    return s + (u.balance||0) + (u.bonusBalance||0);
+  }, 0);
+  const depPending = requests.filter(function(r){ return r.type==='deposit' && r.status==='pending'; }).length;
+  const wdPending = requests.filter(function(r){ return r.type==='withdraw' && r.status==='pending'; }).length;
+  document.getElementById('statUsers').textContent = Object.keys(users).length;
+  document.getElementById('statBalance').textContent = totalBalance.toLocaleString('ru-RU') + ' ₽';
+  document.getElementById('statDep').textContent = depPending;
+  document.getElementById('statWd').textContent = wdPending;
+  document.getElementById('statPromos').textContent = Object.keys(promos).length;
+  document.getElementById('statActs').textContent = acts.length;
+}
+
+/* ============ ИГРОКИ С РЕГИОНОМ, IP, УСТРОЙСТВОМ ============ */
+function renderUsers(){
+  const users = load(STORAGE_USERS, {});
+  const tbody = document.querySelector('#usersTable tbody');
+  const logins = Object.keys(users).sort();
+  if(logins.length === 0){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Игроков нет</td></tr>';
+    return;
+  }
+  tbody.innerHTML = logins.map(function(login){
+    const u = users[login];
+    const bb = u.bonusBalance || 0;
+
+    /* Устройство */
+    const d = u.device || {};
+    const deviceTypeIcon = d.deviceType === 'mobile' ? '📱'
+                         : d.deviceType === 'tablet' ? '📲'
+                         : '💻';
+    const deviceLine = [d.model && d.model !== '—' ? d.model : null, d.os || null]
+      .filter(Boolean).join(' · ') || '—';
+
+    /* IP */
+    const ip = u.ip || '—';
+
+    /* Регион */
+    const r = u.region || {};
+    const countryLine = r.country
+      ? '🌍 ' + (r.countryCode ? r.countryCode + ' · ' : '') + r.country
+      : '—';
+    const regionSub = [r.region, r.city].filter(Boolean).join(', ') ||
+                      r.provider || '';
+    const tzLine = r.timezone || '';
+
+    /* Последний вход */
+    const lastSeen = u.lastSeen
+      ? new Date(u.lastSeen).toLocaleString('ru-RU')
+      : '—';
+
+    return '<tr>'+
+      '<td><b>'+login+'</b>'+
+        '<div class="region-cell"><div class="sub">Последний вход: '+lastSeen+'</div></div>'+
+      '</td>'+
+      '<td>'+(u.balance||0).toLocaleString('ru-RU')+' ₽</td>'+
+      '<td>'+bb.toLocaleString('ru-RU')+' ₽</td>'+
+      '<td><div class="region-cell">'+
+        '<div class="country">'+countryLine+'</div>'+
+        (regionSub ? '<div class="sub">'+regionSub+'</div>' : '')+
+        (tzLine ? '<div class="sub">🕒 '+tzLine+'</div>' : '')+
+      '</div></td>'+
+      '<td><span class="ip-cell">'+ip+'</span></td>'+
+      '<td><div class="device-info">'+
+        '<span class="tag">'+(d.os||'—')+'</span>'+
+        (d.browser ? '<span class="tag">'+d.browser+'</span>' : '')+
+        (d.deviceType ? '<span class="tag">'+d.deviceType+'</span>' : '')+
+        '<div style="margin-top:4px;">'+deviceTypeIcon+' '+deviceLine+'</div>'+
+        (d.screen ? '<div><b>Экран:</b> '+d.screen+'</div>' : '')+
+        (d.language ? '<div><b>Язык:</b> '+d.language+'</div>' : '')+
+      '</div></td>'+
+      '<td><div class="actions">'+
+        '<div class="balance-edit">'+
+          '<input type="number" id="bal-'+login+'" value="'+(u.balance||0)+'" min="0">'+
+          '<button class="btn btn-sm btn-green" onclick="setUserBalance(\''+login+'\')">ОК</button>'+
+        '</div>'+
+        '<button class="btn btn-sm" onclick="addBonus(\''+login+'\', 100)">+100</button>'+
+        '<button class="btn btn-sm" onclick="addBonus(\''+login+'\', 1000)">+1000</button>'+
+        '<button class="btn btn-sm btn-red" onclick="deleteUser(\''+login+'\')">Удалить</button>'+
+      '</div></td>'+
+    '</tr>';
+  }).join('');
+}
+
+function renderDeposits(){
+  const requests = load(STORAGE_REQUESTS, []);
+  const tbody = document.querySelector('#depTable tbody');
+  const list = requests.filter(function(r){ return r.type==='deposit'; })
+                      .sort(function(a,b){ return b.createdAt-a.createdAt; });
+  if(list.length === 0){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">Заявок нет</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(function(r){
+    const date = new Date(r.createdAt).toLocaleString('ru-RU');
+    const statusRu = {pending:'В обработке', approved:'Одобрено', rejected:'Отклонено'}[r.status];
+    const method = r.method === 'crypto' ? '🪙 Крипта' : '💳 Карта';
+    const cur = r.cryptoSymbol || '—';
+    const net = r.network || '—';
+    const amountRub = (r.amountRub || r.amount || 0).toLocaleString('ru-RU')+' ₽';
+    const amountCrypto = r.amountCrypto ? (r.amountCrypto + ' ' + (r.crypto||'')) : '—';
+    let actions = '—';
+    if(r.status === 'pending'){
+      actions = '<div class="actions">'+
+        '<button class="btn btn-sm btn-green" onclick="approveReq(\''+r.id+'\')">Одобрить</button>'+
+        '<button class="btn btn-sm btn-red" onclick="rejectReq(\''+r.id+'\')">Отклонить</button>'+
+      '</div>';
+    }
+    return '<tr>'+
+      '<td><b>'+r.login+'</b></td>'+
+      '<td>'+method+'</td>'+
+      '<td>'+cur+'</td>'+
+      '<td>'+net+'</td>'+
+      '<td>'+amountRub+'</td>'+
+      '<td>'+amountCrypto+'</td>'+
+      '<td>'+date+'</td>'+
+      '<td><span class="status '+r.status+'">'+statusRu+'</span></td>'+
+      '<td>'+actions+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+function renderWithdraws(){
+  const requests = load(STORAGE_REQUESTS, []);
+  const tbody = document.querySelector('#wdTable tbody');
+  const list = requests.filter(function(r){ return r.type==='withdraw'; })
+                      .sort(function(a,b){ return b.createdAt-a.createdAt; });
+  if(list.length === 0){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">Заявок нет</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(function(r){
+    const date = new Date(r.createdAt).toLocaleString('ru-RU');
+    const statusRu = {pending:'В обработке', approved:'Одобрено', rejected:'Отклонено'}[r.status];
+    const cur = r.cryptoSymbol || '—';
+    const net = r.network || '—';
+    const wallet = r.walletAddress || '—';
+    const amountRub = (r.amount || 0).toLocaleString('ru-RU')+' ₽';
+    let actions = '—';
+    if(r.status === 'pending'){
+      actions = '<div class="actions">'+
+        '<button class="btn btn-sm btn-green" onclick="approveReq(\''+r.id+'\')">Одобрить</button>'+
+        '<button class="btn btn-sm btn-red" onclick="rejectReq(\''+r.id+'\')">Отклонить</button>'+
+      '</div>';
+    }
+    return '<tr>'+
+      '<td><b>'+r.login+'</b></td>'+
+      '<td>'+cur+'</td>'+
+      '<td>'+net+'</td>'+
+      '<td><div class="wallet-cell" title="'+wallet+'">'+wallet+'</div></td>'+
+      '<td>'+amountRub+'</td>'+
+      '<td>'+date+'</td>'+
+      '<td><span class="status '+r.status+'">'+statusRu+'</span></td>'+
+      '<td>'+actions+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+function renderPromos(){
+  const promos = load(STORAGE_PROMOS, {});
+  const acts = load(STORAGE_ACTIVATIONS, []);
+  const tbody = document.querySelector('#promosTable tbody');
+  const codes = Object.keys(promos).sort();
+  if(codes.length === 0){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">Промокодов нет</td></tr>';
+    return;
+  }
+  tbody.innerHTML = codes.map(function(code){
+    const p = promos[code];
+    const used = acts.filter(function(a){ return a.code === code; }).length;
+    const cond = p.minDeposit > 0 ? '≥ '+p.minDeposit+' ₽' : 'без условий';
+    const wagerStr = (p.wager||0) > 0 ? 'x'+p.wager : '—';
+    return '<tr>'+
+      '<td><span class="promo-code">'+code+'</span>'+
+        (p.active===false ? ' <span class="status rejected">off</span>' : '')+'</td>'+
+      '<td>+'+p.bonusAmount+' ₽</td>'+
+      '<td>'+cond+'</td>'+
+      '<td>'+periodRu(p.period)+'</td>'+
+      '<td>'+wagerStr+'</td>'+
+      '<td>'+used+'</td>'+
+      '<td>'+p.maxUses+'</td>'+
+      '<td><div class="actions">'+
+        '<button class="btn btn-sm" onclick="togglePromo(\''+code+'\')">'+
+          (p.active===false?'Включить':'Отключить')+'</button>'+
+        '<button class="btn btn-sm btn-red" onclick="deletePromo(\''+code+'\')">Удалить</button>'+
+      '</div></td>'+
+    '</tr>';
+  }).join('');
+}
+
+function renderActivations(){
+  const acts = load(STORAGE_ACTIVATIONS, []);
+  const tbody = document.querySelector('#actsTable tbody');
+  const list = acts.slice().sort(function(a,b){ return b.createdAt-a.createdAt; });
+  if(list.length === 0){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Активаций нет</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(function(a){
+    const created = new Date(a.createdAt).toLocaleString('ru-RU');
+    const completed = a.completedAt ? new Date(a.completedAt).toLocaleString('ru-RU') : '—';
+    let statusRu = a.status, statusClass = a.status;
+    if(a.status==='pending'){ statusClass='pending'; statusRu='Ожидает депозит'; }
+    else if(a.status==='wager'){ statusClass='wager'; statusRu='Отыгрывается'; }
+    else if(a.status==='completed'){ statusClass='completed'; statusRu='Завершён'; }
+    else if(a.status==='failed'){ statusClass='failed'; statusRu='Провален'; }
+    let wagerStr = '—';
+    if(a.status === 'wager' && a.wagerRequired > 0){
+      wagerStr = (a.wagerProgress||0).toLocaleString('ru-RU')+' / '+
+                 a.wagerRequired.toLocaleString('ru-RU')+' ₽ (x'+(a.wagerX||0)+')';
+    } else if(a.wagerX > 0){
+      wagerStr = 'x'+a.wagerX;
+    }
+    return '<tr>'+
+      '<td><b>'+a.login+'</b></td>'+
+      '<td><span class="promo-code">'+a.code+'</span></td>'+
+      '<td>'+created+'</td>'+
+      '<td><span class="status '+statusClass+'">'+statusRu+'</span></td>'+
+      '<td>'+wagerStr+'</td>'+
+      '<td>'+completed+
+        ' <button class="btn btn-sm btn-red" onclick="deleteActivation(\''+a.id+'\')">×</button></td>'+
+    '</tr>';
+  }).join('');
+}
+
+function renderHistoryTable(){
+  const requests = load(STORAGE_REQUESTS, []);
+  const tbody = document.querySelector('#histTable tbody');
+  const list = requests.slice().sort(function(a,b){ return b.createdAt-a.createdAt; });
+  if(list.length === 0){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">История пуста</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(function(r){
+    const typeRu = r.type==='deposit' ? '<span class="type-dep">Депозит</span>' : '<span class="type-wd">Вывод</span>';
+    const created = new Date(r.createdAt).toLocaleString('ru-RU');
+    const processed = r.processedAt ? new Date(r.processedAt).toLocaleString('ru-RU') : '—';
+    const statusRu = {pending:'В обработке', approved:'Одобрено', rejected:'Отклонено'}[r.status];
+    const amount = r.type==='deposit' ? (r.amountRub || r.amount || 0) : r.amount;
+    return '<tr>'+
+      '<td><b>'+r.login+'</b></td>'+
+      '<td>'+typeRu+'</td>'+
+      '<td>'+(amount).toLocaleString('ru-RU')+' ₽</td>'+
+      '<td>'+created+'</td>'+
+      '<td>'+processed+'</td>'+
+      '<td><span class="status '+r.status+'">'+statusRu+'</span></td>'+
+    '</tr>';
+  }).join('');
+}
+
+/* ============ ДЕЙСТВИЯ ============ */
+function setUserBalance(login){
+  const input = document.getElementById('bal-'+login);
+  const val = parseInt(input.value, 10);
+  if(isNaN(val) || val < 0){ showToast('Некорректное значение','lose'); return; }
+  const users = load(STORAGE_USERS, {});
+  if(!users[login]){ showToast('Игрок не найден','lose'); return; }
+  users[login].balance = val;
+  save(STORAGE_USERS, users);
+  renderAll();
+  showToast('Баланс '+login+' = '+val+' ₽','win');
+}
+function addBonus(login, amount){
+  const users = load(STORAGE_USERS, {});
+  if(!users[login]) return;
+  users[login].balance = (users[login].balance||0) + amount;
+  save(STORAGE_USERS, users);
+  renderAll();
+  showToast('+'+amount+' ₽ игроку '+login,'win');
+}
+function deleteUser(login){
+  if(!confirm('Удалить игрока '+login+'?')) return;
+  const users = load(STORAGE_USERS, {});
+  delete users[login];
+  save(STORAGE_USERS, users);
+  let acts = load(STORAGE_ACTIVATIONS, []);
+  acts = acts.filter(function(a){ return a.login !== login; });
+  save(STORAGE_ACTIVATIONS, acts);
+  renderAll();
+  showToast('Игрок удалён','win');
+}
+function approveReq(id){
+  const requests = load(STORAGE_REQUESTS, []);
+  const users = load(STORAGE_USERS, {});
+  const req = requests.find(function(r){ return r.id === id; });
+  if(!req || req.status !== 'pending') return;
+
+  if(!users[req.login]){
+    showToast('Игрок уже удалён','lose');
+    req.status = 'rejected'; req.processedAt = Date.now();
+    save(STORAGE_REQUESTS, requests);
+    renderAll();
+    return;
+  }
+  if(req.type === 'deposit'){
+    const amount = req.amountRub || req.amount || 0;
+    users[req.login].balance = (users[req.login].balance||0) + amount;
+  } else if(req.type === 'withdraw'){
+    if((users[req.login].balance||0) < req.amount){
+      showToast('Недостаточно средств, заявка отклонена','lose');
+      req.status = 'rejected'; req.processedAt = Date.now();
+      save(STORAGE_REQUESTS, requests);
+      renderAll();
+      return;
+    }
+    users[req.login].balance = users[req.login].balance - req.amount;
+  }
+  req.status = 'approved';
+  req.processedAt = Date.now();
+  save(STORAGE_USERS, users);
+  save(STORAGE_REQUESTS, requests);
+  if(req.type === 'deposit') checkPlayerActivations(req.login);
+  renderAll();
+  showToast('Заявка одобрена','win');
+}
+function rejectReq(id){
+  const requests = load(STORAGE_REQUESTS, []);
+  const req = requests.find(function(r){ return r.id === id; });
+  if(!req || req.status !== 'pending') return;
+  req.status = 'rejected';
+  req.processedAt = Date.now();
+  save(STORAGE_REQUESTS, requests);
+  renderAll();
+  showToast('Заявка отклонена','lose');
+}
+function checkPlayerActivations(login){
+  const promos = load(STORAGE_PROMOS, {});
+  const acts = load(STORAGE_ACTIVATIONS, []);
+  const users = load(STORAGE_USERS, {});
+  let changed = false;
+  acts.forEach(function(a){
+    if(a.login !== login || a.status !== 'pending') return;
+    const promo = promos[a.code];
+    if(!promo){ a.status = 'failed'; changed = true; return; }
+    const sum = getDepositsSum(login, promo.period);
+    if(sum >= promo.minDeposit){
+      const wagerX = Math.max(0, Math.min(100, promo.wager || 0));
+      if(wagerX === 0){
+        users[login].balance = (users[login].balance||0) + promo.bonusAmount;
+        a.status = 'completed';
+        a.completedAt = Date.now();
+      } else {
+        users[login].bonusBalance = (users[login].bonusBalance||0) + promo.bonusAmount;
+        a.status = 'wager';
+        a.wagerRequired = promo.bonusAmount * wagerX;
+        a.wagerProgress = 0;
+        a.wagerX = wagerX;
+        a.wagerStartedAt = Date.now();
+      }
+      changed = true;
+    }
+  });
+  if(changed){
+    save(STORAGE_USERS, users);
+    save(STORAGE_ACTIVATIONS, acts);
+  }
+}
+
+/* ============ НАСТРОЙКИ ============ */
+function changeAdminPw(){
+  const oldPw = document.getElementById('oldPw').value;
+  const newPw = document.getElementById('newPw').value;
+  if(oldPw !== getAdminPw()){ showToast('Неверный текущий пароль','lose'); return; }
+  if(newPw.length < 4){ showToast('Пароль минимум 4 символа','lose'); return; }
+  localStorage.setItem(STORAGE_ADMIN_PW, newPw);
+  document.getElementById('oldPw').value = '';
+  document.getElementById('newPw').value = '';
+  showToast('Пароль изменён','win');
+}
+function resetAll(){
+  if(!confirm('Сбросить ВСЕ данные?')) return;
+  if(!confirm('Точно? Ещё раз подтвердите.')) return;
+  localStorage.removeItem(STORAGE_USERS);
+  localStorage.removeItem(STORAGE_REQUESTS);
+  localStorage.removeItem(STORAGE_HISTORY);
+  localStorage.removeItem(STORAGE_SESSION);
+  localStorage.removeItem(STORAGE_PROMOS);
+  localStorage.removeItem(STORAGE_ACTIVATIONS);
+  localStorage.removeItem(STORAGE_CRYPTO);
+  renderAll();
+  showToast('Все данные сброшены','win');
+}
+
+window.addEventListener('storage', function(e){
+  if(e.key === STORAGE_REQUESTS || e.key === STORAGE_USERS ||
+     e.key === STORAGE_PROMOS || e.key === STORAGE_ACTIVATIONS ||
+     e.key === STORAGE_CRYPTO){
+    renderAll();
+  }
+});
+setInterval(renderAll, 2500);
+</script>
+
+</body>
+</html>
